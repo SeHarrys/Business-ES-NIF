@@ -2,15 +2,11 @@ package Business::ES::NIF;
 
 =head1 NAME                                                                                                                                                                                                                     
  
- Business::ES::NIF - The great new Business::ES::NIF!
-
- Check if a valid NIF / CIF / NIE
-
- Referencias: http://es.wikipedia.org/wiki/Numero_de_identificacion_fiscal
+ Business::ES::NIF - Check is valid Spanish NIF
 
 =cut
 
-our $VERSION = '0.00';
+our $VERSION = '0.01';
 
 use Carp;
 
@@ -23,7 +19,7 @@ use 5.014;
 
     use Business::ES::NIF;
                                                                                                                                                                                                           
-    my $NIF = Business::ES::NIF->new( nif => '01234567L' );
+    my $NIF = Business::ES::NIF->new( '01234567L' );
 
     $NIF->NIF('B01234567');
 
@@ -33,6 +29,14 @@ use 5.014;
     }
 
     say $NIF->{type};
+
+=head1 DESCRIPTION
+
+Validate a Spanish NIF / CIF / NIE
+
+Save a reference with the status 0 or 1 , in the case of staus is false return the nif validate in 'nif_check'
+
+Referencias: http://es.wikipedia.org/wiki/Numero_de_identificacion_fiscal  
 
 =head1 EXPORT                                                                                                                                                                                                                   
 
@@ -45,11 +49,14 @@ my $Types = {
      re => '^[0-9]{8}[A-Za-z]',
      val => sub {
 	 my $dni = shift;
-	 
+	 my $ret = shift || 0;
+
 	 $dni =~ /^([0-9]{8})([A-Za-z])/x;
 	 my ($NIF,$DC) = ($1,$2);
 	 my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
 	 
+	 return $NIF.$L if $ret;
+
 	 return 1 if $L eq $DC;
 	 return 0;
      }
@@ -103,17 +110,15 @@ my $Types = {
 };
 
 sub new {
-    my ( $class, %arg ) = @_;
+    my ( $class, $nif ) = @_;
 
-    my $self = {
-	nif => $arg{nif}
-    };
+    my $self = {};
 
     $self = bless $self, $class;
 
-    return $self unless $self->{nif};
+    return $self unless $nif;
 
-    $self->{nif} = standard($self->{nif});
+    $self->{nif} = standard($nif);
 
     $self->check();
 
@@ -143,19 +148,10 @@ sub check {
         if ( $self->{nif} =~ /$Types->{$_}->{re}/ ) {
             $self->{status} = $Types->{$_}->{val}->($self->{nif});
             $self->{type} = $_;
-            $self->{NIF_Check} = dni_esperado($self->{nif}) if $self->{type} eq 'NIF';
+            $self->{nif_check} = $Types->{NIF}->{val}->($self->{nif},1) if $self->{status} == 0 && $self->{type} eq 'NIF';
         }
     }
-
-}
-
-sub dni_esperado {
-    my $dni = shift;
-    $dni =~ /^([0-9]{8})([A-Za-z])/x;
-    my ($NIF,$DC) = ($1,$2);
-    my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
     
-    return $NIF.$L;
 }
 
 =head1 AUTHOR
