@@ -6,9 +6,7 @@ package Business::ES::NIF;
 
 =cut
 
-our $VERSION = '0.01';
-
-use Carp;
+our $VERSION = '0.02';
 
 use strict;
 use warnings FATAL => 'all';
@@ -109,6 +107,9 @@ my $Types = {
  }
 };
 
+=head2 new
+
+=cut
 sub new {
     my ( $class, $nif ) = @_;
 
@@ -125,6 +126,9 @@ sub new {
     return $self;
 }
 
+=head2 NIF
+
+=cut
 sub NIF {
     my $self = shift;
 
@@ -133,6 +137,9 @@ sub NIF {
     $self->check();
 }
 
+=head2 standard
+
+=cut
 sub standard {
     my $NIF = shift;
 
@@ -141,6 +148,9 @@ sub standard {
     return uc $NIF;
 }
 
+=head2 check
+
+=cut
 sub check {
     my $self = shift;
 
