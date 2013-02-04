@@ -6,12 +6,10 @@ package Business::ES::NIF;
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use strict;
 use warnings FATAL => 'all';
-
-use 5.014;
 
 =head1 SYNOPSIS                                                                                                                                                                                                                 
 
@@ -57,7 +55,8 @@ my $Types = {
 
 	 return 1 if $L eq $DC;
 	 return 0;
-     }
+     },
+     extra => sub { return 'NIF'; }
  },
  CIF => { 
      re => '^[ABCDEFGHJPQRUVNW][0-9]{8}$',
@@ -77,13 +76,43 @@ my $Types = {
 	 my $c = (10 - substr($pares + $nones, -1)) % 10; 
 	 my $l = substr('JABCDEFGHI', $c, 1);       
 	 
-	 given ($sociedad) {
-	     when (/[KPQS]/i) { return 0 if $l ne uc($control); }
-	     when (/[ABEH]/i) { return 0 if $c != $control; }
-	     default { return 0 if $c != $control  and  $l ne uc($control); }
-	 }
+         for ($sociedad) {
+             if (/[KPQS]/i) {
+                 return 0 if $l ne uc($control);
+             }elsif (/[ABEH]/i) {
+                 return 0 if $c != $control;
+             }else {
+                 return 0 if $c != $control  and  $l ne uc($control);
+             }
+         }
 	 
 	 return 1;
+     },
+     extra => sub {
+         my $cif = shift;
+
+         my $Tipos = {
+             'A' => 'Sociedad Anonima - S.A',
+             'B' => 'Sociedad Limitada - S.L',
+             'C' => 'Sociedad Colectiva - S.C',
+             'D' => 'Sociedades comanditarias',
+             'E' => 'Comunidad de bienes y herencias',
+             'F' => 'Sociedades cooperativas',
+             'G' => 'Asociaciones',
+             'H' => 'Comunidaddes de propietarios',
+             'J' => 'Sociedades civiles',
+             'P' => 'Corporaciones locales',
+             'Q' => 'Organismos publicos',
+             'N' => 'Entidades extranjeras',
+             'R' => 'Congregaciones e instituciones religiosas',
+             'S' => 'Organos de administracion del estado',
+             'U' => 'Uniones temporales de epresas',
+             'V' => 'Otros tipos de sociedades',
+             'W' => 'Establecimientos permanentes de entidades no residentes en España',
+         };
+         $cif =~ /^([ABCDEFGHJPQRUVNW])[0-9]{7}[0-9]$/x;
+
+         return $Tipos->{$1};
      }
  },
  NIE => {
@@ -95,20 +124,22 @@ my $Types = {
 	 my ($NIE,$NIF,$DC) = ($1,$2,$3);
 	 
          for ($NIE) {
-	     $NIF = '0'.$NIF when /X/;
-	     $NIF = '1'.$NIF when /Y/;
-	     $NIF = '2'.$NIF when /Z/;
-	 }
+             $NIF = '0'.$NIF if /X/;
+             $NIF = '1'.$NIF if /Y/;
+             $NIF = '2'.$NIF if /Z/;
+         }
+
          my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
 	 
          return 1 if $L eq $DC;
          return 0;
-     }
+     },
+     extra => sub { return 'NIE';  }     
  }
 };
 
 =head2 new
-
+    
 =cut
 sub new {
     my ( $class, $nif ) = @_;
@@ -143,7 +174,7 @@ sub NIF {
 sub standard {
     my $NIF = shift;
 
-    $NIF =~ s/[-\.]//g;
+    $NIF =~ s/[-\.\s]//g;
 
     return uc $NIF;
 }
@@ -158,6 +189,7 @@ sub check {
         if ( $self->{nif} =~ /$Types->{$_}->{re}/ ) {
             $self->{status} = $Types->{$_}->{val}->($self->{nif});
             $self->{type} = $_;
+	    $self->{extra} = $Types->{$_}->{extra}->($self->{nif});
             $self->{nif_check} = $Types->{NIF}->{val}->($self->{nif},1) if $self->{status} == 0 && $self->{type} eq 'NIF';
         }
     }
@@ -166,7 +198,7 @@ sub check {
 
 =head1 AUTHOR
 
-Harun Delgado, C<< <trycky at gmail.com> >>
+Harun Delgado, C<< <hdp at djmania.es> >>
 
 =head1 BUGS
 
@@ -180,7 +212,6 @@ automatically be notified of progress on your bug as I make changes.
 You can find documentation for this module with the perldoc command.
 
     perldoc Business::ES::NIF
-
 
 You can also look for information at:
 
@@ -210,7 +241,7 @@ L<http://search.cpan.org/dist/Business-ES-NIF/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2013 Harun Delgado.
+Copyright 2013 Harun Delgado. L<http://djmania.es>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the the Artistic License (2.0). You may obtain a
