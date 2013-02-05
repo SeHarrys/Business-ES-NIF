@@ -5,6 +5,7 @@ WriteMakefile
   'NAME' => 'Business::ES::NIF',
   'VERSION_FROM' => 'lib/Business/ES/NIF.pm',
   'PREREQ_PM' => {
+                   'Business::Tax::VAT::Validation' => 0,
                    'Test::More' => 0
                  },
   'INSTALLDIRS' => 'site',

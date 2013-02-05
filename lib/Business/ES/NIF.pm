@@ -6,7 +6,7 @@ package Business::ES::NIF;
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use strict;
 use warnings FATAL => 'all';
@@ -14,25 +14,39 @@ use warnings FATAL => 'all';
 =head1 SYNOPSIS                                                                                                                                                                                                                 
 
     use Business::ES::NIF;
-                                                                                                                                                                                                          
-    my $NIF = Business::ES::NIF->new( '01234567L' );
 
-    $NIF->NIF('B01234567');
+    my $NIF = Business::ES::NIF->new( nif => '01234567L' , vies => 0);
 
-    unless ( $NIF->{status} ) {
-     say "Invalid NIF";
-     exit;
-    }
+    $NIF->set('B01234567');
+    $NIF->set('B01234567',1); <= Check with Business::Tax::VAT::Validation
 
-    say $NIF->{type};
+ Dump:
+
+    $VAR1 = bless( {
+                 'status' => 1,
+                 'nif' => '01234567L',
+                 'vies' => 0,
+                 'extra' => 'NIF',
+                 'type' => 'NIF',
+               }, 'NIF' );
+
+    $VAR1 = bless( {
+                 'status' => 0,
+                 'nif' => 'B01234567',
+                 'vies' => 1,
+                 'vies_check' => 0,
+                 'extra' => 'Sociedad Limitada - S.L',
+                 'type' => 'CIF',
+                 'vies_error' => 'Invalid VAT Number (false)'
+               }, 'NIF' );
 
 =head1 DESCRIPTION
 
 Validate a Spanish NIF / CIF / NIE
 
-Save a reference with the status 0 or 1 , in the case of staus is false return the nif validate in 'nif_check'
-
 Referencias: http://es.wikipedia.org/wiki/Numero_de_identificacion_fiscal  
+
+Se puede activar la comprobacion sobre el VIES ( Business::Tax::VAT::Validation )
 
 =head1 EXPORT                                                                                                                                                                                                                   
 
@@ -142,41 +156,32 @@ my $Types = {
     
 =cut
 sub new {
-    my ( $class, $nif ) = @_;
+    my ($class, %args) = @_;
 
-    my $self = {};
+    my $self = {
+        nif => $args{nif},
+        vies => $args{vies} || 0,
+    };
 
     $self = bless $self, $class;
 
-    return $self unless $nif;
-
-    $self->{nif} = standard($nif);
-
-    $self->check();
+    $self->set();
 
     return $self;
 }
 
-=head2 NIF
-
-=cut
-sub NIF {
+=head2 set
+    Set NIF
+    $vies = 1 || 0
+=cut                                                                                                                                                                                                                             
+sub set {
     my $self = shift;
+    my $vies = shift || 0;
 
-    $self->{nif} = standard(shift);
+    $self->{nif} =~ s/[-\.\s]//g;
+    $self->{nif} = uc $self->{nif};
 
     $self->check();
-}
-
-=head2 standard
-
-=cut
-sub standard {
-    my $NIF = shift;
-
-    $NIF =~ s/[-\.\s]//g;
-
-    return uc $NIF;
 }
 
 =head2 check
@@ -191,14 +196,29 @@ sub check {
             $self->{type} = $_;
 	    $self->{extra} = $Types->{$_}->{extra}->($self->{nif});
             $self->{nif_check} = $Types->{NIF}->{val}->($self->{nif},1) if $self->{status} == 0 && $self->{type} eq 'NIF';
+	    $self->vies() if $self->{vies};
         }
     }
     
 }
 
+=head2 vies
+
+=cut
+sub vies {
+    my $self = shift;
+
+    require Business::Tax::VAT::Validation;
+
+    my $vat = Business::Tax::VAT::Validation->new();
+
+    $self->{vies_check} = $vat->check('ES'.$self->{nif});
+    $self->{vies_error} = $vat->get_last_error unless $self->{vies_check};
+}
+
 =head1 AUTHOR
 
-Harun Delgado, C<< <hdp at djmania.es> >>
+Harun Delgado, C<< <hdp at djmania.es> >> L<http://djmania.es>
 
 =head1 BUGS
 
@@ -240,8 +260,6 @@ L<http://search.cpan.org/dist/Business-ES-NIF/>
 
 
 =head1 LICENSE AND COPYRIGHT
-
-Copyright 2013 Harun Delgado. L<http://djmania.es>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the the Artistic License (2.0). You may obtain a
