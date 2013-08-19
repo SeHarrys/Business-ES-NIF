@@ -6,7 +6,7 @@ package Business::ES::NIF;
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use strict;
 use warnings FATAL => 'all';
@@ -55,101 +55,101 @@ Se puede activar la comprobacion sobre el VIES ( Business::Tax::VAT::Validation 
 =cut 
 
 my $Types = {
- NIF => {
-     re => '^[0-9]{8}[A-Za-z]',
-     val => sub {
-	 my $dni = shift;
-	 my $ret = shift || 0;
-
-	 $dni =~ /^([0-9]{8})([A-Za-z])/x;
-	 my ($NIF,$DC) = ($1,$2);
-	 my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
-	 
-	 return $NIF.$L if $ret;
-
-	 return 1 if $L eq $DC;
-	 return 0;
-     },
+    NIF => {
+	re => '^[0-9]{8}[A-Za-z]',
+	val => sub {
+	    my $dni = shift;
+	    my $ret = shift || 0;
+	    
+	    $dni =~ /^([0-9]{8})([A-Za-z])/x;
+	    my ($NIF,$DC) = ($1,$2);
+	    my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
+	    
+	    return $NIF.$L if $ret;
+	    
+	    return 1 if $L eq $DC;
+	    return 0;
+	},
      extra => sub { return 'NIF'; }
- },
- CIF => { 
-     re => '^[ABCDEFGHJPQRUVNW][0-9]{8}$',
-     val => sub {
-         my $cif = shift;
-         
-	 $cif =~ /^([ABCDEFGHJPQRUVNW])([0-9]{7})([0-9])$/x; 
-	 my ($sociedad, $inscripcion, $control) = ($1,$2,$3);
-	 
-	 my @n = split //, $inscripcion;
-	 my $pares = $n[1] + $n[3] + $n[5];          
-	 my $nones;                                  
-	 for (0, 2, 4, 6) {
-	     my $d   = $n[$_] * 2;                   
-	     $nones += $d < 10 ? $d : $d - 9;        
-	 }
-	 my $c = (10 - substr($pares + $nones, -1)) % 10; 
-	 my $l = substr('JABCDEFGHI', $c, 1);       
-	 
-         for ($sociedad) {
-             if (/[KPQS]/i) {
-                 return 0 if $l ne uc($control);
-             }elsif (/[ABEH]/i) {
-                 return 0 if $c != $control;
-             }else {
-                 return 0 if $c != $control  and  $l ne uc($control);
-             }
-         }
-	 
-	 return 1;
-     },
-     extra => sub {
-         my $cif = shift;
+    },
+    CIF => { 
+	re => '^[ABCDEFGHJPQRUVNW][0-9]{8}$',
+	val => sub {
+	    my $cif = shift;
+	    
+	    $cif =~ /^([ABCDEFGHJPQRUVNW])([0-9]{7})([0-9])$/x; 
+	    my ($sociedad, $inscripcion, $control) = ($1,$2,$3);
+	    
+	    my @n = split //, $inscripcion;
+	    my $pares = $n[1] + $n[3] + $n[5];          
+	    my $nones;                                  
+	    for (0, 2, 4, 6) {
+		my $d   = $n[$_] * 2;                   
+		$nones += $d < 10 ? $d : $d - 9;        
+	    }
+	    my $c = (10 - substr($pares + $nones, -1)) % 10; 
+	    my $l = substr('JABCDEFGHI', $c, 1);       
+	    
+	    for ($sociedad) {
+		if (/[KPQS]/i) {
+		    return 0 if $l ne uc($control);
+		}elsif (/[ABEH]/i) {
+		    return 0 if $c != $control;
+		}else {
+		    return 0 if $c != $control  and  $l ne uc($control);
+		}
+	    }
 
-         my $Tipos = {
-             'A' => 'Sociedad Anonima - S.A',
-             'B' => 'Sociedad Limitada - S.L',
-             'C' => 'Sociedad Colectiva - S.C',
-             'D' => 'Sociedades comanditarias',
-             'E' => 'Comunidad de bienes y herencias',
-             'F' => 'Sociedades cooperativas',
-             'G' => 'Asociaciones',
-             'H' => 'Comunidaddes de propietarios',
-             'J' => 'Sociedades civiles',
-             'P' => 'Corporaciones locales',
-             'Q' => 'Organismos publicos',
-             'N' => 'Entidades extranjeras',
-             'R' => 'Congregaciones e instituciones religiosas',
-             'S' => 'Organos de administracion del estado',
-             'U' => 'Uniones temporales de epresas',
-             'V' => 'Otros tipos de sociedades',
-             'W' => 'Establecimientos permanentes de entidades no residentes en España',
-         };
-         $cif =~ /^([ABCDEFGHJPQRUVNW])[0-9]{7}[0-9]$/x;
-
-         return $Tipos->{$1};
-     }
- },
- NIE => {
-     re => '^[XY][0-9]{7}[A-Z]$',
-     val => sub {
-	 my $dni = shift;
-	 $dni =~ /^([XY])([0-9]{7})([A-Z])$/x;
+	    return 1;
+	},
+	extra => sub {
+	    my $cif = shift;
+	    
+	    my $Tipos = {
+		'A' => 'Sociedad Anonima - S.A',
+		'B' => 'Sociedad Limitada - S.L',
+		'C' => 'Sociedad Colectiva - S.C',
+		'D' => 'Sociedades comanditarias',
+		'E' => 'Comunidad de bienes y herencias',
+		'F' => 'Sociedades cooperativas',
+		'G' => 'Asociaciones',
+		'H' => 'Comunidaddes de propietarios',
+		'J' => 'Sociedades civiles',
+		'P' => 'Corporaciones locales',
+		'Q' => 'Organismos publicos',
+		'N' => 'Entidades extranjeras',
+		'R' => 'Congregaciones e instituciones religiosas',
+		'S' => 'Organos de administracion del estado',
+		'U' => 'Uniones temporales de epresas',
+		'V' => 'Otros tipos de sociedades',
+		'W' => 'Establecimientos permanentes de entidades no residentes en España',
+	    };
+	    $cif =~ /^([ABCDEFGHJPQRUVNW])[0-9]{7}[0-9]$/x;
+	    
+	    return $Tipos->{$1};
+	}
+    },
+    NIE => {
+	re => '^[XY][0-9]{7}[A-Z]$',
+	val => sub {
+	    my $dni = shift;
+	    $dni =~ /^([XY])([0-9]{7})([A-Z])$/x;
 	 
-	 my ($NIE,$NIF,$DC) = ($1,$2,$3);
+	    my ($NIE,$NIF,$DC) = ($1,$2,$3);
 	 
-         for ($NIE) {
-             $NIF = '0'.$NIF if /X/;
-             $NIF = '1'.$NIF if /Y/;
-             $NIF = '2'.$NIF if /Z/;
-         }
-
-         my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
-	 
-         return 1 if $L eq $DC;
-         return 0;
-     },
-     extra => sub { return 'NIE';  }     
- }
+	    for ($NIE) {
+		$NIF = '0'.$NIF if /X/;
+		$NIF = '1'.$NIF if /Y/;
+		$NIF = '2'.$NIF if /Z/;
+	    }
+	    
+	    my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
+	    
+	    return 1 if $L eq $DC;
+	    return 0;
+	},
+	extra => sub { return 'NIE';  }     
+    }
 };
 
 =head2 new
@@ -190,7 +190,7 @@ sub set {
 sub check {
     my $self = shift;
 
-    for (keys $Types) {
+    for (keys %{ $Types }) {
         if ( $self->{nif} =~ /$Types->{$_}->{re}/ ) {
             $self->{status} = $Types->{$_}->{val}->($self->{nif});
             $self->{type} = $_;
