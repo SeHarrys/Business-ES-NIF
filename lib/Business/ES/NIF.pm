@@ -6,7 +6,7 @@ package Business::ES::NIF;
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use strict;
 use warnings FATAL => 'all';
@@ -72,6 +72,49 @@ my $Types = {
 	},
      extra => sub { return 'NIF'; }
     },
+    CIFe => {
+        re => '^[SQPK][0-9]{7}[A-J]$',
+        val => sub {
+            my $cif = shift;
+
+            $cif =~ /^([SQPK])([0-9]{7})([A-J])$/x;
+            my ($sociedad, $inscripcion, $control) = ($1,$2,$3);
+
+            my @n = split //, $inscripcion;
+            my $pares = $n[1] + $n[3] + $n[5];
+            my $nones;
+            for (0, 2, 4, 6) {
+                my $d   = $n[$_] * 2;
+                $nones += $d < 10 ? $d : $d - 9;
+            }
+            my $c = (10 - substr($pares + $nones, -1)) % 10;
+            my $l = substr('JABCDEFGHI', $c, 1);
+
+            for ($sociedad) {
+                if (/[KPQS]/i) {
+                    return 0 if $l ne uc($control);
+                }else {
+                    return 0 if $c != $control  and  $l ne uc($control);
+                }
+            }
+
+            return 1;
+        },
+        extra => sub {
+            my $cif = shift;
+
+            my $Tipos = {
+                'S' => 'Organos de administracion del estado',
+                'Q' => 'Organismos autónomos, estatales o no, y asimilados, y congregaciones e instituciones religiosas',
+                'P' => 'Corporaciones locales.',
+                'K' => 'Formato antiguo orden EHA/451/2008',
+            };
+
+            $cif =~ /^([SQPK])[0-9]{7}[A-J]$/x;
+
+            return $Tipos->{$1};
+        }
+    },
     CIF => { 
 	re => '^[ABCDEFGHJPQRUVNW][0-9]{8}$',
 	val => sub {
@@ -119,7 +162,6 @@ my $Types = {
 		'Q' => 'Organismos publicos',
 		'N' => 'Entidades extranjeras',
 		'R' => 'Congregaciones e instituciones religiosas',
-		'S' => 'Organos de administracion del estado',
 		'U' => 'Uniones temporales de epresas',
 		'V' => 'Otros tipos de sociedades',
 		'W' => 'Establecimientos permanentes de entidades no residentes en España',
