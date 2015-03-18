@@ -6,7 +6,7 @@ package Business::ES::NIF;
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use strict;
 use warnings FATAL => 'all';
@@ -60,79 +60,79 @@ my $Types = {
 	val => sub {
 	    my $dni = shift;
 	    my $ret = shift || 0;
-	    
-	    $dni =~ /^([0-9]{8})([A-Za-z])/x;
+
+	    $dni =~ /^([0-9]{8})([A-Za-z])$/x;
 	    my ($NIF,$DC) = ($1,$2);
 	    my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
-	    
+
 	    return $NIF.$L if $ret;
-	    
+
 	    return 1 if $L eq $DC;
 	    return 0;
 	},
      extra => sub { return 'NIF'; }
     },
     CIFe => {
-        re => '^[SQPK][0-9]{7}[A-J]$',
-        val => sub {
-            my $cif = shift;
+	re => '^[SQPK][0-9]{7}[A-J]$',
+	val => sub {
+	    my $cif = shift;
 
-            $cif =~ /^([SQPK])([0-9]{7})([A-J])$/x;
-            my ($sociedad, $inscripcion, $control) = ($1,$2,$3);
+	    $cif =~ /^([SQPK])([0-9]{7})([A-J])$/x;
+	    my ($sociedad, $inscripcion, $control) = ($1,$2,$3);
 
-            my @n = split //, $inscripcion;
-            my $pares = $n[1] + $n[3] + $n[5];
-            my $nones;
-            for (0, 2, 4, 6) {
-                my $d   = $n[$_] * 2;
-                $nones += $d < 10 ? $d : $d - 9;
-            }
-            my $c = (10 - substr($pares + $nones, -1)) % 10;
-            my $l = substr('JABCDEFGHI', $c, 1);
+	    my @n = split //, $inscripcion;
+	    my $pares = $n[1] + $n[3] + $n[5];
+	    my $nones;
+	    for (0, 2, 4, 6) {
+		my $d   = $n[$_] * 2;
+		$nones += $d < 10 ? $d : $d - 9;
+	    }
+	    my $c = (10 - substr($pares + $nones, -1)) % 10;
+	    my $l = substr('JABCDEFGHI', $c, 1);
 
-            for ($sociedad) {
-                if (/[KPQS]/i) {
-                    return 0 if $l ne uc($control);
-                }else {
-                    return 0 if $c != $control  and  $l ne uc($control);
-                }
-            }
+	    for ($sociedad) {
+		if (/[KPQS]/i) {
+		    return 0 if $l ne uc($control);
+		}else {
+		    return 0 if $c != $control  and  $l ne uc($control);
+		}
+	    }
 
-            return 1;
-        },
-        extra => sub {
-            my $cif = shift;
+	    return 1;
+	},
+	extra => sub {
+	    my $cif = shift;
 
-            my $Tipos = {
-                'S' => 'Organos de administracion del estado',
-                'Q' => 'Organismos autónomos, estatales o no, y asimilados, y congregaciones e instituciones religiosas',
-                'P' => 'Corporaciones locales.',
-                'K' => 'Formato antiguo orden EHA/451/2008',
-            };
+	    my $Tipos = {
+		'S' => 'Organos de administracion del estado',
+		'Q' => 'Organismos autónomos, estatales o no, y asimilados, y congregaciones e instituciones religiosas',
+		'P' => 'Corporaciones locales.',
+		'K' => 'Formato antiguo orden EHA/451/2008',
+	    };
 
-            $cif =~ /^([SQPK])[0-9]{7}[A-J]$/x;
+	    $cif =~ /^([SQPK])[0-9]{7}[A-J]$/x;
 
-            return $Tipos->{$1};
-        }
+	    return $Tipos->{$1};
+	}
     },
-    CIF => { 
+    CIF => {
 	re => '^[ABCDEFGHJPQRUVNW][0-9]{8}$',
 	val => sub {
 	    my $cif = shift;
-	    
-	    $cif =~ /^([ABCDEFGHJPQRUVNW])([0-9]{7})([0-9])$/x; 
+
+	    $cif =~ /^([ABCDEFGHJPQRUVNW])([0-9]{7})([0-9])$/x;
 	    my ($sociedad, $inscripcion, $control) = ($1,$2,$3);
-	    
+
 	    my @n = split //, $inscripcion;
-	    my $pares = $n[1] + $n[3] + $n[5];          
-	    my $nones;                                  
+	    my $pares = $n[1] + $n[3] + $n[5];
+	    my $nones;
 	    for (0, 2, 4, 6) {
-		my $d   = $n[$_] * 2;                   
-		$nones += $d < 10 ? $d : $d - 9;        
+		my $d   = $n[$_] * 2;
+		$nones += $d < 10 ? $d : $d - 9;
 	    }
-	    my $c = (10 - substr($pares + $nones, -1)) % 10; 
-	    my $l = substr('JABCDEFGHI', $c, 1);       
-	    
+	    my $c = (10 - substr($pares + $nones, -1)) % 10;
+	    my $l = substr('JABCDEFGHI', $c, 1);
+
 	    for ($sociedad) {
 		if (/[KPQS]/i) {
 		    return 0 if $l ne uc($control);
@@ -147,7 +147,7 @@ my $Types = {
 	},
 	extra => sub {
 	    my $cif = shift;
-	    
+
 	    my $Tipos = {
 		'A' => 'Sociedad Anonima - S.A',
 		'B' => 'Sociedad Limitada - S.L',
@@ -167,7 +167,7 @@ my $Types = {
 		'W' => 'Establecimientos permanentes de entidades no residentes en España',
 	    };
 	    $cif =~ /^([ABCDEFGHJPQRUVNW])[0-9]{7}[0-9]$/x;
-	    
+
 	    return $Tipos->{$1};
 	}
     },
@@ -176,38 +176,38 @@ my $Types = {
 	val => sub {
 	    my $dni = shift;
 	    $dni =~ /^([XY])([0-9]{7})([A-Z])$/x;
-	 
+
 	    my ($NIE,$NIF,$DC) = ($1,$2,$3);
-	 
+
 	    for ($NIE) {
 		$NIF = '0'.$NIF if /X/;
 		$NIF = '1'.$NIF if /Y/;
 		$NIF = '2'.$NIF if /Z/;
 	    }
-	    
+
 	    my $L = substr( 'TRWAGMYFPDXBNJZSQVHLCKE', $NIF % 23, 1);
-	    
+
 	    return 1 if $L eq $DC;
 	    return 0;
 	},
-	extra => sub { return 'NIE';  }     
+	extra => sub { return 'NIE';  }
     }
 };
 
 =head2 new
-    
+    new method
 =cut
 sub new {
     my ($class, %args) = @_;
 
     my $self = {
-        nif => $args{nif},
-        vies => $args{vies} || 0,
+	nif => '',
+	vies => $args{vies} || 0,
     };
 
     $self = bless $self, $class;
 
-    $self->set();
+    $self->set($args{nif});
 
     return $self;
 }
@@ -215,13 +215,19 @@ sub new {
 =head2 set
     Set NIF
     $vies = 1 || 0
-=cut                                                                                                                                                                                                                             
+=cut
+
 sub set {
     my $self = shift;
+    my $nif  = shift;
     my $vies = shift || 0;
 
-    $self->{nif} =~ s/[-\.\s]//g;
-    $self->{nif} = uc $self->{nif};
+    $self->{vies} = $vies;
+
+    $nif =~ s/[-\.\s]//g;
+    $self->{nif} = uc $nif;
+
+    delete $self->{nif_check} if $self->{nif_check};
 
     $self->check();
 }
@@ -233,15 +239,19 @@ sub check {
     my $self = shift;
 
     for (keys %{ $Types }) {
-        if ( $self->{nif} =~ /$Types->{$_}->{re}/ ) {
-            $self->{status} = $Types->{$_}->{val}->($self->{nif});
-            $self->{type} = $_;
+	if ( $self->{nif} =~ /$Types->{$_}->{re}/ ) {
+	    $self->{type} = $_;
+
+	    $self->{status} = $Types->{$_}->{val}->($self->{nif});
 	    $self->{extra} = $Types->{$_}->{extra}->($self->{nif});
-            $self->{nif_check} = $Types->{NIF}->{val}->($self->{nif},1) if $self->{status} == 0 && $self->{type} eq 'NIF';
+
+	    $self->{nif_check} = $Types->{NIF}->{val}->($self->{nif},1)
+		if $self->{status} == 0 && $self->{type} eq 'NIF';
+
 	    $self->vies() if $self->{vies};
-        }
+	}
     }
-    
+
 }
 
 =head2 vies
