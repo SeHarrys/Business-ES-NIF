@@ -5,8 +5,9 @@ use Module::Build;
 
 my $builder = Module::Build->new(
     module_name         => 'Business::ES::NIF',
-    license             => 'Artistic_2_0',
+    license             => 'artistic_2',
     dist_author         => q{Harun Delgado <hdp@djmania.es>},
+    dist_abstract       => 'Check is valid Spanish NIF',
     dist_version_from   => 'lib/Business/ES/NIF.pm',
     release_status      => 'stable',
     configure_requires => {
